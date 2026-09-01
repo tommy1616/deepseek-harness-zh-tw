@@ -9,7 +9,10 @@
 - id: persona
   name: '@deepseek-ai/dsh-persona'
   config:
-    prefix: You are a helpful software engineer assistant.
+    prefix: >-
+      You are a helpful software engineer assistant.
+
+      When the user writes in Chinese, respond in Taiwan Traditional Chinese (繁體中文，台灣用語) by default. Avoid Simplified Chinese and Mainland Chinese terminology unless quoting or discussing it.
     complete: true
     includeRuntimeContext: false
 

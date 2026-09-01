@@ -109,7 +109,7 @@ describe('locale apply', () => {
     const { entry, instance, face } = faceOf(b.slots)
     // The inject-time re-sync sealed the init window: the mirror is current.
     expect(instance.getSnapshot().active).toBe('en')
-    expect(instance.getSnapshot().options.map(o => o.id)).toEqual(['zh', 'en'])
+    expect(instance.getSnapshot().options.map(o => o.id)).toEqual(['zh', 'en', 'zh-TW'])
     // Copy rides the standard locale seat: the entry declares the namespace.
     expect(entry.locale).toBe(SETTINGS_NS)
     expect(locale.bind(SETTINGS_NS)('language.title')).toBe('Language')
@@ -118,7 +118,10 @@ describe('locale apply', () => {
     expect(locale.getLocale().active).toBe('zh')
     expect(instance.getSnapshot().active).toBe('zh')
     expect(locale.bind(SETTINGS_NS)('language.title')).toBe('语言')
-    await vi.waitFor(() => { expect(b.mutate).toHaveBeenCalledTimes(2) })
+    face.setLocale('zh-TW')
+    expect(locale.getLocale().active).toBe('zh-TW')
+    expect(locale.bind(SETTINGS_NS)('language.title')).toBe('語言')
+    await vi.waitFor(() => { expect(b.mutate).toHaveBeenCalledTimes(3) })
   })
 
   it('projects external locale registration and disposal into the Language row', async () => {
@@ -138,11 +141,12 @@ describe('locale apply', () => {
     expect(instance.getSnapshot().options).toEqual([
       { id: 'zh', label: '中文' },
       { id: 'en', label: 'English' },
+      { id: 'zh-TW', label: '繁體中文' },
       { id: 'ja', label: '日本語' },
     ])
 
     await languagePack.dispose()
-    expect(instance.getSnapshot().options.map(option => option.id)).toEqual(['zh', 'en'])
+    expect(instance.getSnapshot().options.map(option => option.id)).toEqual(['zh', 'en', 'zh-TW'])
   })
 
   it('loads and refreshes the explicit Host preference after nonblocking activation', async () => {

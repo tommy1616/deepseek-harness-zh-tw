@@ -1,5 +1,5 @@
 ---
-description: "面向用户与插件作者的 web GUI 本地化说明：zh/en 偏好、浏览器派生回退、类型化命名空间字典与框架翻译席位。"
+description: "面向用户与插件作者的 web GUI 本地化说明：zh/en/zh-TW 偏好、浏览器派生回退、类型化命名空间字典与框架翻译席位。"
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-使用 `dsh-client-locale` 可在 web GUI 中切换内置的英文和中文 locale，或 client 插件添加的语言。用户选择会立即生效；loopback 页面把选择持久化到 `$DSH_HOME/settings.yaml`，非 loopback 页面则只为当前进程保留选择。全新浏览器会使用浏览器请求的第一个受支持语言，直到允许读取的已存储偏好到达。插件作者可添加类型化命名空间字典，并通过公开 locale API 翻译；经 slot 渲染的文案无需重新加载即可随语言切换更新。
+使用 `dsh-client-locale` 可在 web GUI 中切换内置的英文、简体中文和台湾繁体中文（`zh-TW`）locale，或 client 插件添加的语言。用户选择会立即生效；loopback 页面把选择持久化到 `$DSH_HOME/settings.yaml`，非 loopback 页面则只为当前进程保留选择。全新浏览器会使用浏览器请求的第一个受支持语言，直到允许读取的已存储偏好到达。插件作者可添加类型化命名空间字典，并通过公开 locale API 翻译；经 slot 渲染的文案无需重新加载即可随语言切换更新。
 
 ## 目录
 
@@ -29,11 +29,11 @@ kind: "package-reference"
 
 ### 选择语言
 
-打开“设置 → 常规”并选择一种已注册语言。生效中的 locale 会立即应用：UI 文案切换、`<html lang>` 指向外部 id 或内置语言的文档标签，选择写入持久设置分区。没有显式 Host 偏好的浏览器会按完整标签、再按主语言子标签选择 `navigator` 请求的第一个已注册语言，无法匹配时回退到英文。已存储的外部 locale 会等待其定义注册，不会在不可用时生效。
+打开“设置 → 常规”并选择一种已注册语言；选择 `zh-TW` 即可使用台湾繁体中文。生效中的 locale 会立即应用：UI 文案切换、`<html lang>` 指向外部 id 或内置语言的文档标签，选择写入持久设置分区。没有显式 Host 偏好的浏览器会按完整标签、再按主语言子标签选择 `navigator` 请求的第一个已注册语言，无法匹配时回退到英文。已存储的外部 locale 会等待其定义注册，不会在不可用时生效。
 
 ### 注册字典
 
-用已合并进 `LocaleNamespaceMap` 的命名空间调用 `ctx.locale.register(ns, { zh, en })`；编译器会对照该命名空间的类型化键并集检查每个键，并要求两个内置 locale 齐全。消费方通过 `ctx.locale.bind(ns)` 或框架注入的 `t` 席位翻译。UI 已挂载后再注册的字典无需重新挂载即可生效。
+用已合并进 `LocaleNamespaceMap` 的命名空间调用 `ctx.locale.register(ns, { zh, en, 'zh-TW' })`；编译器会对照该命名空间的类型化键并集检查每个键，并要求所有内置 locale 齐全。消费方通过 `ctx.locale.bind(ns)` 或框架注入的 `t` 席位翻译。UI 已挂载后再注册的字典无需重新挂载即可生效。
 
 ### 注册语言包
 
@@ -92,7 +92,7 @@ Host 通过 settings 服务为 loopback 页面持久化偏好。Client 会刻意
 | [`src/client/index.ts`](src/client/index.ts) | `LocaleRuntime`、字典注册表、Language 行注册、`locale/change` 事件 |
 | [`src/index.ts`](src/index.ts) | node 半侧：注册 `locale` 设置命名空间 |
 | [`src/locale-settings.ts`](src/locale-settings.ts) | `locale.preference` 的持久 schema |
-| [`src/locales/`](src/locales/) | 内置的 `zh`／`en` 字典 |
+| [`src/locales/`](src/locales/) | 内置的 `zh`／`en`／`zh-TW` 字典 |
 
 </details>
 

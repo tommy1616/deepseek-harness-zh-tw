@@ -71,7 +71,9 @@ describe('dsh-sdk-minimal bundle', () => {
     expect(rows.find(row => row.id === 'system-prompt')?.config).toEqual({
       includeHarnessIdentity: false,
       includeRuntimeContext: false,
-      personaPrefix: { __jsExpr: "process.env.DSH_SYSTEM_PROMPT ?? 'You are a helpful software engineer assistant.'" },
+      personaPrefix: {
+        __jsExpr: "process.env.DSH_SYSTEM_PROMPT ?? 'You are a helpful software engineer assistant. When the user writes in Chinese, respond in Taiwan Traditional Chinese (繁體中文，台灣用語) by default. Avoid Simplified Chinese and Mainland Chinese terminology unless quoting or discussing it.'",
+      },
     })
     expect(rows.find(row => row.id === 'agent-loop')?.config).toEqual({ agents: [] })
     expect(rows.find(row => row.id === 'terminal-bash')).toMatchObject({
