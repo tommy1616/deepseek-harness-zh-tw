@@ -4,6 +4,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { stubSettingsScope, type StubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
 import type { LocaleSettings, LocaleSnapshot } from '@deepseek-ai/dsh-client-locale/client'
 import { FALLBACK_LOCALE, LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
+import { toTaiwanChinese } from '../src/locales/zh-tw.ts'
 const make = (host?: StubSettingsScope<LocaleSettings>): {
   ctx: Context
   svc: LocaleRuntime
@@ -48,6 +49,35 @@ describe('LocaleRuntime', () => {
     svc.setLocale('en')
     expect(t('hello')).toBe('Hello')
     expect(t('missing.key')).toBe('missing.key')
+  })
+
+  it('derives Taiwan Traditional Chinese from every zh dictionary registration', () => {
+    const { svc } = make()
+    svc.register('ns', 'zh', {
+      save: '保存',
+      search: '搜索',
+      file: '文件',
+      permission: '权限',
+      feedback: '反馈',
+    })
+    svc.setLocale('zh-TW')
+    const t = svc.bind('ns')
+    expect(t('save')).toBe('儲存')
+    expect(t('search')).toBe('搜尋')
+    expect(t('file')).toBe('檔案')
+    expect(t('permission')).toBe('權限')
+    expect(t('feedback')).toBe('回饋')
+  })
+
+  it('normalizes Mainland product wording to Taiwan terminology', () => {
+    expect(toTaiwanChinese('通用设置')).toBe('一般設定')
+    expect(toTaiwanChinese('插话发送')).toBe('引導傳送')
+    expect(toTaiwanChinese('图片拖动到此处即可添加')).toBe('將圖片拖曳至此處即可新增')
+    expect(toTaiwanChinese('智能体')).toBe('AI 代理程式')
+    expect(toTaiwanChinese('默认配置文件')).toBe('預設設定檔')
+    expect(toTaiwanChinese('当前模型不支持图片')).toBe('目前模型不支援圖片')
+    expect(toTaiwanChinese('Session 日志')).toBe('Session 日誌')
+    expect(toTaiwanChinese('正在導出 Session')).toBe('正在匯出 Session')
   })
 
   it('falls through to the common vocabulary after the namespace misses (production keys)', () => {
@@ -197,7 +227,7 @@ describe('LocaleRuntime', () => {
 
     dispose()
     expect(svc.getLocale().active).toBe('zh')
-    expect(svc.getLocale().locales.map(locale => locale.id)).toEqual(['zh', 'en'])
+    expect(svc.getLocale().locales.map(locale => locale.id)).toEqual(['zh', 'en', 'zh-TW'])
     expect(svc.bind('ns')('hello')).toBe('Hello')
     const revision = svc.getLocale().revision
     dispose()
@@ -273,7 +303,7 @@ describe('LocaleRuntime', () => {
       .toThrow('locale fallback "fr" is not registered')
     expect(() => svc.addLanguage({ id: 'fr', label: 'Français', fallback: 'fr-CA' }))
       .toThrow('fallback cycle')
-    expect(svc.getLocale().locales.map(locale => locale.id)).toEqual(['zh', 'en', 'fr-CA'])
+    expect(svc.getLocale().locales.map(locale => locale.id)).toEqual(['zh', 'en', 'zh-TW', 'fr-CA'])
   })
 
   it('adopts a saved external locale when its definition registers later', () => {
@@ -323,6 +353,8 @@ describe('LocaleRuntime', () => {
     expect(make().svc.getLocale().active).toBe('en')
     stubLanguages('zh-Hant-TW')
     expect(make().svc.getLocale().active).toBe('zh')
+    stubLanguages('zh-TW')
+    expect(make().svc.getLocale().active).toBe('zh-TW')
     // An unshipped language walks the list to the first one this app ships.
     stubLanguages('fr-FR', 'en-US')
     expect(make().svc.getLocale().active).toBe('en')
@@ -370,7 +402,8 @@ describe('LocaleRuntime', () => {
     // One constant covers both jobs: the locale the UI opens in with no usable
     // browser signal, and the dictionary backing a key the active locale
     // misses. Safe to share only because the shipped zh/en dictionaries carry
-    // identical key sets (asserted below on a registered pair).
+    // identical key sets (asserted below on a registered pair); zh-TW is
+    // generated from zh at registration time.
     expect(FALLBACK_LOCALE).toBe('en')
     vi.stubGlobal('window', undefined)
     const { svc } = make()
@@ -388,11 +421,12 @@ describe('LocaleRuntime', () => {
     expect(svc.bind('ns2')('onlyZh')).toBe('onlyZh')
   })
 
-  it('starts with exactly the two shipped locales and their fallback relation', () => {
+  it('starts with the three shipped locales and their fallback relations', () => {
     const { svc } = make()
     expect(svc.getLocale().locales).toEqual([
       { id: 'zh', label: '中文', fallback: 'en' },
       { id: 'en', label: 'English' },
+      { id: 'zh-TW', label: '繁體中文', fallback: 'zh' },
     ])
   })
 })

@@ -11,10 +11,13 @@ export const LOCALE_PREFERENCE_FIELD = 'preference'
 /** Accepted BCP 47-style language ids. */
 export const LOCALE_ID_PATTERN = /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/u
 
-/** Locale identifiers shipped by the browser client. */
+/** Base locale identifiers whose dictionaries are supplied by each feature. */
 export const LOCALE_IDS = ['zh', 'en'] as const
 
-/** Locale identifier shipped by the browser client. */
+/** Built-in locale id for Taiwan Traditional Chinese. */
+export const TRADITIONAL_CHINESE_LOCALE = 'zh-TW' as const
+
+/** Base locale identifier used by the typed dictionary registration form. */
 export type BuiltInLocaleId = typeof LOCALE_IDS[number]
 
 /** Open locale identifier accepted from language-pack plugins. */

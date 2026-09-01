@@ -16,12 +16,14 @@ import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import {
   LOCALE_ID_PATTERN, LOCALE_IDS, LOCALE_PREFERENCE_FIELD, LOCALE_SETTINGS_NAMESPACE,
+  TRADITIONAL_CHINESE_LOCALE,
   type BuiltInLocaleId, type LocaleId, type LocaleSettings,
 } from '../locale-settings.ts'
 import { en, zh, type CommonKey } from '../locales/index.ts'
 import {
   en as settingsEn, zh as settingsZh, type SettingsLocaleKey,
 } from '../locales/settings.ts'
+import { toTaiwanChineseDictionary } from '../locales/zh-tw.ts'
 import type { LanguageRowInjected } from './LanguageRow.tsx'
 import { LanguageRow } from './LanguageRow.tsx'
 import { createLanguageRowStore } from './settings-store.ts'
@@ -29,6 +31,7 @@ import { createLanguageRowStore } from './settings-store.ts'
 export type { LanguageRowComponentProps, LanguageRowInjected } from './LanguageRow.tsx'
 export type { LanguageOptionRow, LanguageRowState } from './settings-store.ts'
 export type { CommonKey } from '../locales/index.ts'
+export { TRADITIONAL_CHINESE_LOCALE } from '../locale-settings.ts'
 export type { BuiltInLocaleId, LocaleId, LocaleSettings } from '../locale-settings.ts'
 
 // The translate currency lives in ui-slots (the render machinery synthesizes
@@ -112,13 +115,16 @@ export const COMMON_NS = 'common'
 /** Namespace owning this feature's settings-row copy. */
 export const SETTINGS_NS = 'settings.locale'
 
-/** The two locales and dictionaries shipped by this package. */
+/** The base locale metadata shipped by this package. */
 const BUILT_IN_LOCALE_METADATA = {
   zh: { label: '中文', fallback: 'en' },
   en: { label: 'English' },
 } as const satisfies Record<BuiltInLocaleId, Omit<LocaleDefinition, 'id'>>
 const BUILT_IN_LOCALES: readonly LocaleDefinition[] = Object.freeze(
-  LOCALE_IDS.map(id => Object.freeze({ id, ...BUILT_IN_LOCALE_METADATA[id] })),
+  [
+    ...LOCALE_IDS.map(id => Object.freeze({ id, ...BUILT_IN_LOCALE_METADATA[id] })),
+    Object.freeze({ id: TRADITIONAL_CHINESE_LOCALE, label: '繁體中文', fallback: 'zh' }),
+  ],
 )
 
 /** Case-insensitive key for BCP 47-style ids. */
@@ -359,10 +365,12 @@ export class LocaleRuntime {
    * Register a declared namespace's dictionaries, all locales in one call —
    * the typed form: each dictionary is checked against the namespace's
    * {@link LocaleNamespaceMap} key union (a missing or extra key is a
-   * compile error), and every shipped locale is required (bilingual balance
-   * enforced at registration). Duplicate (ns, locale) throws (single occupant; a
-   * namespace's texts have one owner). Registration bumps the revision so
-   * mounted outlets pick up late-arriving dictionaries.
+   * compile error), and the base zh/en pair is required. A zh dictionary also
+   * installs the generated zh-TW companion automatically, so every existing
+   * feature dictionary participates without duplicating its source object.
+   * Duplicate (ns, locale) throws (single occupant; a namespace's texts have
+   * one owner). Registration bumps the revision so mounted outlets pick up
+   * late-arriving dictionaries.
    * @param ns - a namespace merged into LocaleNamespaceMap.
    * @param dicts - complete dictionaries keyed by built-in locale id.
    * @returns disposer removing every locale registered by this call (idempotent).
@@ -389,6 +397,14 @@ export class LocaleRuntime {
       }
     }
     let locales = this.dicts.get(ns)
+    const zhPair = pairs.find(([locale]) => localeKey(locale) === 'zh')
+    if (
+      zhPair !== undefined
+      && !pairs.some(([locale]) => localeKey(locale) === localeKey(TRADITIONAL_CHINESE_LOCALE))
+      && !locales?.has(localeKey(TRADITIONAL_CHINESE_LOCALE))
+    ) {
+      pairs.push([TRADITIONAL_CHINESE_LOCALE, toTaiwanChineseDictionary(zhPair[1])])
+    }
     if (!locales) {
       locales = new Map()
       this.dicts.set(ns, locales)
