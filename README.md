@@ -8,6 +8,10 @@ It is built on an **everything-is-a-plugin** architecture and powered by [Cordis
 
 Documentation: [https://deepseek-harness.github.io/deepseek-harness/](https://deepseek-harness.github.io/deepseek-harness/)
 
+## 台灣繁體中文支援
+
+本 fork 提供 `zh-TW`（繁體中文／台灣）介面語系與台灣用語特化，並將中文使用者的預設回答語言設定為台灣繁體中文。詳見[台灣繁體中文特化說明](README.zh-TW.md)。
+
 ## Developer preview
 
 DeepSeek Harness is in _developer preview_ and iterating rapidly. **THERE WILL BE COMPATIBILITY-BREAKING CHANGES.**
