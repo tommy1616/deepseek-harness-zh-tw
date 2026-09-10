@@ -42,6 +42,7 @@ export function resolveRequestImagePolicy(model: DeepSeekCatalogModel): ImageReq
     maxBytes: model.imageMaxBytes === undefined
       ? DEFAULT_REQUEST_IMAGE_MAX_BYTES
       : model.imageMaxBytes,
+    ...model.imageFormat === undefined || model.imageFormat === 'auto' ? {} : { format: model.imageFormat },
   }
 }
 

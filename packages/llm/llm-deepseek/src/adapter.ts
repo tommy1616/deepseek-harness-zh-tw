@@ -26,6 +26,7 @@ import type {
   AttachmentId,
   AttachmentStore,
   ImageAttachmentRef,
+  ImageRequestFormat,
   RequestImageAttachment,
 } from '@deepseek-ai/dsh-attachment'
 import type { CredentialRef } from '@deepseek-ai/dsh-credentials'
@@ -70,6 +71,8 @@ export interface DeepSeekCatalogModel {
    * system prompt; omission means only a leading system message is read.
    */
   systemPromptUpdate?: SystemPromptUpdate
+  /** Provider wire format for request previews; `jpeg` is useful for gateways without WebP support. */
+  imageFormat?: ImageRequestFormat
 }
 
 /**

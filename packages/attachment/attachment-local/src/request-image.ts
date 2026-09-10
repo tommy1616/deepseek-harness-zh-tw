@@ -61,6 +61,7 @@ function descriptor(attachment: ImageAttachmentRef, policy: ImageRequestPolicy):
       webpQualities: IMAGE_ENCODING_QUALITIES,
       webpEffort: WEBP_ENCODING_EFFORT,
       jpegQualities: IMAGE_ENCODING_QUALITIES,
+      format: policy.format ?? 'auto',
       order: ['alpha:webp', 'opaque:jpeg'],
       colourspace: 'srgb',
     },
@@ -89,6 +90,12 @@ function sourcePipeline(attachment: StoredImageAttachment): Sharp {
   return sharp(attachment.data, { failOn: 'error', limitInputPixels: false }).toColourspace('srgb')
 }
 
+function formatMatches(format: ImageRequestPolicy['format'], mediaType: ImageAttachmentRef['mediaType']): boolean {
+  return format === undefined || format === 'auto'
+    || (format === 'jpeg' && mediaType === 'image/jpeg')
+    || (format === 'webp' && mediaType === 'image/webp')
+}
+
 async function createRequestImage(
   attachment: StoredImageAttachment,
   policy: ImageRequestPolicy,
@@ -97,7 +104,8 @@ async function createRequestImage(
   const dimensions = requestImageDimensions(attachment.ref.width, attachment.ref.height, policy.maxPixels)
   if (dimensions.width === attachment.ref.width
     && dimensions.height === attachment.ref.height
-    && attachment.data.byteLength <= policy.maxBytes) {
+    && attachment.data.byteLength <= policy.maxBytes
+    && formatMatches(policy.format, attachment.ref.mediaType)) {
     return {
       data: attachment.data,
       mediaType: attachment.ref.mediaType,
@@ -106,7 +114,7 @@ async function createRequestImage(
     }
   }
   const encodedVersion = await encodeFirstWithinLimit(
-    encodingLadder(pipeline(attachment, dimensions.width, dimensions.height), hasAlpha),
+    encodingLadder(pipeline(attachment, dimensions.width, dimensions.height), hasAlpha, policy.format),
     policy.maxBytes,
   )
   return isExhaustedEncoding(encodedVersion) ? encodedVersion.smallest : encodedVersion
@@ -129,7 +137,8 @@ async function readCached(
     const maximum = requestImageDimensions(attachment.ref.width, attachment.ref.height, policy.maxPixels)
     if (detected.depth !== 'uchar' || detected.space !== 'srgb'
       || detected.width > maximum.width || detected.height > maximum.height
-      || !encodedAlphaIsCompatible(expectedAlpha, detected)) return undefined
+      || !formatMatches(policy.format, detected.mediaType)
+      || !encodedAlphaIsCompatible(expectedAlpha, detected, policy.format)) return undefined
     return { data, mediaType: detected.mediaType, width: detected.width, height: detected.height, hasAlpha: detected.hasAlpha }
   } catch (error: unknown) {
     if ((error as NodeJS.ErrnoException | null)?.code === 'ENOENT') return undefined
@@ -141,11 +150,12 @@ async function readCached(
 async function verifyRequestImage(
   image: EncodedRequestImage,
   expectedAlpha: boolean,
+  format: ImageRequestPolicy['format'],
 ): Promise<VerifiedRequestImage> {
   const detected = await detectImage(image.data)
   if (detected.depth !== 'uchar' || detected.space !== 'srgb'
     || detected.width !== image.width || detected.height !== image.height
-    || detected.mediaType !== image.mediaType || !encodedAlphaIsCompatible(expectedAlpha, detected)) {
+    || detected.mediaType !== image.mediaType || !encodedAlphaIsCompatible(expectedAlpha, detected, format)) {
     throw new AttachmentError(
       'Encoded model-request image does not match its verified 8-bit sRGB metadata.',
       'ATTACHMENT_WRITE_FAILED',
@@ -189,7 +199,7 @@ export async function readRequestImageFile(
   const created = cached ?? await createRequestImage(attachment, policy, source.hasAlpha)
   const version = cached ?? (created.data === attachment.data
     ? { ...created, hasAlpha: source.hasAlpha }
-    : await verifyRequestImage(created, source.hasAlpha))
+    : await verifyRequestImage(created, source.hasAlpha, policy.format))
   signal?.throwIfAborted()
   if (cached === undefined && version.data !== attachment.data) await writeCached(path, version.data)
   return {

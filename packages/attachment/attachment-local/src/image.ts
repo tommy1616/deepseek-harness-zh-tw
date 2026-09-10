@@ -2,7 +2,7 @@
 
 import sharp, { type Sharp } from 'sharp'
 import { AttachmentError } from '@deepseek-ai/dsh-attachment'
-import type { ImageMediaType } from '@deepseek-ai/dsh-attachment'
+import type { ImageMediaType, ImageRequestFormat } from '@deepseek-ai/dsh-attachment'
 
 /** Decoded metadata from a supported image. */
 export interface DetectedImage {
@@ -35,10 +35,12 @@ export interface DetectedImage {
 export function encodedAlphaIsCompatible(
   sourceHasAlpha: boolean | undefined,
   output: Pick<DetectedImage, 'mediaType' | 'hasAlpha'>,
+  format: ImageRequestFormat = 'auto',
 ): boolean {
   return sourceHasAlpha === undefined
     || output.hasAlpha === sourceHasAlpha
-    || (sourceHasAlpha && !output.hasAlpha && output.mediaType === 'image/webp')
+    || (sourceHasAlpha && !output.hasAlpha
+      && (output.mediaType === 'image/webp' || format === 'jpeg'))
 }
 
 const MEDIA_TYPES: Readonly<Record<string, ImageMediaType>> = {

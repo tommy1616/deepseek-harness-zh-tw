@@ -1089,10 +1089,12 @@ export interface DeepSeekCatalogModel {
    * system prompt; omission means only a leading system message is read.
    */
   systemPromptUpdate?: SystemPromptUpdate
+  /** Provider wire format for request previews; `jpeg` is useful for gateways without WebP support. */
+  imageFormat?: ImageRequestFormat
 }
 ```
 
-Depends on: [`ModelModality`](../packages/llm/llm/src/index.ts) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts) · [`SystemPromptUpdate`](../packages/llm/llm/src/index.ts)
+Depends on: [`ImageRequestFormat`](../packages/attachment/attachment/src/index.ts) · [`ModelModality`](../packages/llm/llm/src/index.ts) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts) · [`SystemPromptUpdate`](../packages/llm/llm/src/index.ts)
 
 Source: [`packages/llm/llm-deepseek/src/index.ts:134`](../packages/llm/llm-deepseek/src/index.ts)
 

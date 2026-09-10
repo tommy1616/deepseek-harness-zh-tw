@@ -185,6 +185,34 @@ describe('local request-image cache', () => {
     await expect(sharp(alphaRequest.data).metadata()).resolves.toMatchObject({ hasAlpha: true, depth: 'uchar', space: 'srgb' })
   })
 
+  it('can force an alpha image to JPEG for gateways without WebP support', async () => {
+    const attachments = await store()
+    const side = 64
+    const pixels = new Uint8Array(side * side * 4)
+    for (let index = 0; index < pixels.length; index += 4) {
+      pixels[index] = 30
+      pixels[index + 1] = 120
+      pixels[index + 2] = 220
+      pixels[index + 3] = 180
+    }
+    const source = new Uint8Array(await sharp(pixels, {
+      raw: { width: side, height: side, channels: 4 },
+    }).png().toBuffer())
+    const attachment = await attachments.saveImage({ data: source, mediaType: 'image/png' })
+
+    const request = await attachments.readImageRequest(attachment, {
+      maxPixels: 32 * 32,
+      maxBytes: 1024 * 1024,
+      format: 'jpeg',
+    })
+
+    expect(request.mediaType).toBe('image/jpeg')
+    expect(request.hasAlpha).toBe(false)
+    await expect(sharp(request.data).metadata()).resolves.toMatchObject({
+      format: 'jpeg', width: 32, height: 32, hasAlpha: false,
+    })
+  })
+
   it.each([3, 4] as const)('projects a 16-bit %s-channel PNG as a bounded 8-bit request image', async (channels) => {
     const attachments = await store()
     const source = new Uint8Array(await sharp({

@@ -182,6 +182,7 @@ const catalogModel: z<DeepSeekCatalogModel> = z.object({
   imagePixelBudget: z.union([z.number().step(1).min(1), 'low']),
   imageMaxBytes: z.number().step(1).min(1),
   systemPromptUpdate: z.const('in-history'),
+  imageFormat: z.union(['auto', 'jpeg', 'webp']),
 })
 
 export const Config: z<Config> = z.object({
@@ -256,7 +257,7 @@ function resolveModels(models: readonly DeepSeekCatalogModel[] | undefined): Dee
       throw new Error(`llm-deepseek: catalog model "${model.id}" inputModalities must not contain duplicates`)
     }
     const hasImage = inputModalities.includes('image')
-    if (!hasImage && (model.imagePixelBudget !== undefined || model.imageMaxBytes !== undefined)) {
+    if (!hasImage && (model.imagePixelBudget !== undefined || model.imageMaxBytes !== undefined || model.imageFormat !== undefined)) {
       throw new Error(`llm-deepseek: text-only catalog model "${model.id}" cannot declare image request limits`)
     }
     if (model.imagePixelBudget !== undefined
@@ -272,6 +273,10 @@ function resolveModels(models: readonly DeepSeekCatalogModel[] | undefined): Dee
     const systemPromptUpdate: string | undefined = model.systemPromptUpdate
     if (systemPromptUpdate !== undefined && systemPromptUpdate !== 'in-history') {
       throw new Error(`llm-deepseek: catalog model "${model.id}" systemPromptUpdate must be "in-history" when present`)
+    }
+    if (model.imageFormat !== undefined
+      && model.imageFormat !== 'auto' && model.imageFormat !== 'jpeg' && model.imageFormat !== 'webp') {
+      throw new Error(`llm-deepseek: catalog model "${model.id}" imageFormat must be "auto", "jpeg", or "webp"`)
     }
     if (seen.has(model.id)) throw new Error(`llm-deepseek: duplicate catalog model "${model.id}"`)
     seen.add(model.id)
@@ -289,6 +294,7 @@ function resolveModels(models: readonly DeepSeekCatalogModel[] | undefined): Dee
             ? DEFAULT_LOW_DETAIL_IMAGE_PIXEL_BUDGET
             : model.imagePixelBudget ?? DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET,
           imageMaxBytes: model.imageMaxBytes ?? DEFAULT_REQUEST_IMAGE_MAX_BYTES,
+          imageFormat: model.imageFormat ?? 'auto',
         }
         : {},
     }

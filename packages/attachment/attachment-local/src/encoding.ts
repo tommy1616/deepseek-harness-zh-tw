@@ -1,6 +1,7 @@
 /** Shared quality ladder and lazy candidate execution for normalization and request-image encoders. */
 
 import type { Sharp } from 'sharp'
+import type { ImageRequestFormat } from '@deepseek-ai/dsh-attachment'
 
 /** Shared ladder for both encoders: spaced so each step buys a real size reduction. */
 export const IMAGE_ENCODING_QUALITIES = [85, 75, 60] as const
@@ -30,10 +31,23 @@ async function encode(pipeline: Sharp, mediaType: EncodedImage['mediaType'], qua
  * @param hasAlpha - decoded source alpha fact selecting the codec.
  * @returns encoders ordered from highest to lowest ladder quality.
  */
-export function encodingLadder(prepared: Sharp, hasAlpha: boolean): Array<() => Promise<EncodedImage>> {
-  const mediaType = hasAlpha ? 'image/webp' : 'image/jpeg'
+export function encodingLadder(
+  prepared: Sharp,
+  hasAlpha: boolean,
+  format: ImageRequestFormat = 'auto',
+): Array<() => Promise<EncodedImage>> {
+  const mediaType = format === 'jpeg'
+    ? 'image/jpeg'
+    : format === 'webp'
+      ? 'image/webp'
+      : hasAlpha ? 'image/webp' : 'image/jpeg'
   return IMAGE_ENCODING_QUALITIES.map(quality => (
-    () => encode(prepared.clone(), mediaType, quality)
+    () => {
+      const pipeline = mediaType === 'image/jpeg' && hasAlpha
+        ? prepared.clone().flatten({ background: { r: 255, g: 255, b: 255 } })
+        : prepared.clone()
+      return encode(pipeline, mediaType, quality)
+    }
   ))
 }
 

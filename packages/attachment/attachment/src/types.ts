@@ -7,6 +7,9 @@ export type { AttachmentId } from './brand.ts'
 /** Raster image formats accepted by the version-one attachment path. */
 export type ImageMediaType = 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif'
 
+/** Deterministic encoded format for one provider model-request image. */
+export type ImageRequestFormat = 'auto' | 'jpeg' | 'webp'
+
 /** Durable, serializable reference to one immutable normalized image. */
 export interface ImageAttachmentRef {
   /** Opaque storage identifier; never a filesystem path or bearer URL. */
@@ -138,6 +141,8 @@ export interface ImageRequestPolicy {
   maxPixels: number
   /** Encoded-byte target before base64 expansion or Files API upload; the smallest quality-ladder output is kept when no quality fits. */
   maxBytes: number
+  /** Optional provider-compatible output format; `auto` preserves alpha as WebP. */
+  format?: ImageRequestFormat
 }
 
 /** Cached request version derived from one provider-independent normalized attachment. */

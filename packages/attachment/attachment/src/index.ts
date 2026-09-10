@@ -32,6 +32,7 @@ export type {
   FileAttachmentRef,
   ImageAttachmentLimits,
   ImageAttachmentRef,
+  ImageRequestFormat,
   ImageRequestPolicy,
   ImageMediaType,
   PromptContentPart,
