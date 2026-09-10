@@ -123,6 +123,44 @@ describe('PiAiAdapter provider routing', () => {
     expect(server.headers[0]?.['user-agent']).toBe(userAgent())
   })
 
+  it('sends the current conversation id as the OpenCode session header', async () => {
+    const server = await mockServer([{ events: textEvents }])
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    await ctx.plugin(LlmPiAi, {
+      providers: {
+        'opencode-go': {
+          apiKeyEnv: 'PI_TEST_KEY',
+          api: 'openai-completions',
+          baseURL: server.url,
+          models: [{ id: 'test-model', contextWindow: 8192, maxTokens: 1024 }],
+          headers: { 'X-OpenCode-Session': 'stale-static-value' },
+        },
+      },
+    })
+
+    await assemble(ctx, {
+      provider: 'opencode-go',
+      model: 'test-model',
+      messages: [],
+      sessionId: 'session-for-opencode' as never,
+    })
+
+    expect(server.headers[0]?.['x-opencode-session']).toBe('session-for-opencode')
+  })
+
+  it('does not add an OpenCode session header to unrelated gateways', async () => {
+    const server = await mockServer([{ events: textEvents }])
+    const ctx = await harness(server.url)
+    await assemble(ctx, {
+      model: 'deepseek-v4-flash',
+      messages: [],
+      sessionId: 'session-for-unrelated-gateway' as never,
+    })
+
+    expect(server.headers[0]).not.toHaveProperty('x-opencode-session')
+  })
+
   it('forwards common stream options and profile reasoning', async () => {
     const server = await mockServer([{ events: textEvents }])
     const ctx = await harness(server.url, {

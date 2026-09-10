@@ -201,12 +201,34 @@ function reasoningInfo(
   }
 }
 
+/** Whether a route is backed by the OpenCode Go gateway. */
+function isOpenCodeRoute(provider: string, baseURL: string | undefined): boolean {
+  if (provider.toLowerCase().startsWith('opencode')) return true
+  if (baseURL === undefined) return false
+  try {
+    const hostname = new URL(baseURL).hostname.toLowerCase()
+    return hostname === 'opencode.ai' || hostname.endsWith('.opencode.ai')
+  } catch {
+    return false
+  }
+}
+
 /** Merge deployment headers while removing case-insensitive attribution collisions. */
-function requestHeaders(headers: Readonly<Record<string, string>> | undefined): Record<string, string> {
+function requestHeaders(
+  headers: Readonly<Record<string, string>> | undefined,
+  provider: string,
+  baseURL: string | undefined,
+  sessionId: string | undefined,
+): Record<string, string> {
   const attribution = attributionHeaders()
   const reserved = new Set(Object.keys(attribution).map(name => name.toLowerCase()))
+  const hasOpenCodeSession = sessionId !== undefined && isOpenCodeRoute(provider, baseURL)
   return {
-    ...Object.fromEntries(Object.entries(headers ?? {}).filter(([name]) => !reserved.has(name.toLowerCase()))),
+    ...Object.fromEntries(Object.entries(headers ?? {}).filter(([name]) => (
+      !reserved.has(name.toLowerCase())
+      && !(hasOpenCodeSession && name.toLowerCase() === 'x-opencode-session')
+    ))),
+    ...hasOpenCodeSession ? { 'x-opencode-session': sessionId } : {},
     ...attribution,
   }
 }
@@ -385,7 +407,12 @@ export class PiAiAdapter extends LlmAdapter {
         signal: watchdog.signal,
         // Profile headers are deployment-owned; attribution names are
         // Harness-owned and therefore win collisions.
-        headers: requestHeaders(profile.headers),
+        headers: requestHeaders(
+          profile.headers,
+          options.provider,
+          profile.baseURL,
+          options.sessionId === undefined ? undefined : String(options.sessionId),
+        ),
       })
       const iterator = toStreamChunks(events, model.contextWindow, options.signal, model.id)[Symbol.asyncIterator]()
       let exhausted = false
